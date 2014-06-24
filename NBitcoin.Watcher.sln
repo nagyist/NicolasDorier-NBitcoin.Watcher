@@ -3,6 +3,10 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NBitcoin.Watcher", "NBitcoin.Watcher\NBitcoin.Watcher.csproj", "{A69D830A-033A-4166-8972-7D90A22A144F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NBitcoin.Watcher.Tests", "NBitcoin.Watcher.Tests\NBitcoin.Watcher.Tests.csproj", "{2C66E0C3-26B3-42B1-B72D-6CBAF5B26D28}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NBitcoin.Watcher.Client", "NBitcoin.Watcher.Client\NBitcoin.Watcher.Client.csproj", "{014F15CA-28DB-4E9D-BB03-B6DF1B4FC742}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,6 +17,14 @@ Global
 		{A69D830A-033A-4166-8972-7D90A22A144F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A69D830A-033A-4166-8972-7D90A22A144F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A69D830A-033A-4166-8972-7D90A22A144F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C66E0C3-26B3-42B1-B72D-6CBAF5B26D28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C66E0C3-26B3-42B1-B72D-6CBAF5B26D28}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C66E0C3-26B3-42B1-B72D-6CBAF5B26D28}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C66E0C3-26B3-42B1-B72D-6CBAF5B26D28}.Release|Any CPU.Build.0 = Release|Any CPU
+		{014F15CA-28DB-4E9D-BB03-B6DF1B4FC742}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{014F15CA-28DB-4E9D-BB03-B6DF1B4FC742}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{014F15CA-28DB-4E9D-BB03-B6DF1B4FC742}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{014F15CA-28DB-4E9D-BB03-B6DF1B4FC742}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

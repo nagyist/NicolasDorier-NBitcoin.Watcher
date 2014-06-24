@@ -5,11 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("NBitcoin.Watcher")]
+[assembly: AssemblyTitle("NBitcoin.Watcher.Client")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Nicolas Dorier")]
-[assembly: AssemblyProduct("NBitcoin.Watcher")]
+[assembly: AssemblyCompany("Microsoft")]
+[assembly: AssemblyProduct("NBitcoin.Watcher.Client")]
+[assembly: AssemblyCopyright("Copyright © Microsoft 2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -19,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("e151762f-0f04-4936-b00a-c3a3150e1e8e")]
+[assembly: Guid("4db807d6-cffd-4bc4-9445-b44d01cc319c")]
 
 // Version information for an assembly consists of the following four values:
 //
