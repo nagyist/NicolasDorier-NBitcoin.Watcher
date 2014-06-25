@@ -76,9 +76,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Contracts\Serialization.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RegisterController.cs" />
+    <Compile Include="Contracts\Watch.cs" />
+    <Compile Include="WatchController.cs" />
+    <Compile Include="WatchDirectory.cs" />
     <Compile Include="WatcherTrace.cs" />
   </ItemGroup>
   <ItemGroup>

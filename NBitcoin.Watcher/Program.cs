@@ -8,10 +8,14 @@ using System.Threading.Tasks;
 using System.Web.Http.SelfHost;
 using System.Web.Http;
 using System.Net.Http.Headers;
+using Newtonsoft.Json;
+using NBitcoin.Watcher.Contracts;
+using System.Web.Http.Dispatcher;
+using System.IO;
 
 namespace NBitcoin.Watcher
 {
-	public class WatcherOptions
+	public class WatcherOptions : IHttpControllerActivator
 	{
 		public WatcherOptions()
 		{
@@ -28,6 +32,15 @@ namespace NBitcoin.Watcher
 		[Option("path", DefaultValue = "NBitcoin",
 					HelpText = "Relative listening Url")]
 		public string Path
+		{
+			get;
+			set;
+		}
+
+		[Option('w',"watches", 
+					DefaultValue="",
+					HelpText="Location of Watches (launch directory by default)")]
+		public string WatchDirectory
 		{
 			get;
 			set;
@@ -57,13 +70,33 @@ namespace NBitcoin.Watcher
 			WatcherTrace.Opening(address);
 			var conf = new HttpSelfHostConfiguration(address);
 			conf.Formatters.JsonFormatter.SupportedMediaTypes.Add(new MediaTypeHeaderValue("text/html"));
+			conf.Formatters.JsonFormatter.SerializerSettings = Serialization.CreateSettings();
 			conf.MapHttpAttributeRoutes();
-
+			conf.Services.Replace(typeof(IHttpControllerActivator), this);
+			
 			HttpSelfHostServer server = new HttpSelfHostServer(conf);
 			await server.OpenAsync();
 			WatcherTrace.Started();
 			return server;
 		}
+
+		#region IHttpControllerActivator Members
+
+		public System.Web.Http.Controllers.IHttpController Create(System.Net.Http.HttpRequestMessage request, System.Web.Http.Controllers.HttpControllerDescriptor controllerDescriptor, Type controllerType)
+		{
+			if(controllerType == typeof(WatchController))
+				return CreateController();
+			return null;
+		}
+
+		public WatchController CreateController()
+		{
+			if(WatchDirectory == "")
+				WatchDirectory = Directory.GetCurrentDirectory();
+			return new WatchController(WatchDirectory);
+		}
+
+		#endregion
 	}
 	class Program
 	{
