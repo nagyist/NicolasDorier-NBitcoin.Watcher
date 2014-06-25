@@ -48,8 +48,9 @@ namespace NBitcoin.Watcher.Tests
 				var actualWatches = (await tester.Client.ListWatches()).OfType<PubKeyHashWatch>().ToArray();
 
 				var w1 = actualWatches.FirstOrDefault(o => o.Address == k1);
+				var w2 = actualWatches.FirstOrDefault(o => o.Address == k2);
 				Assert.True(w1 != null);
-				Assert.True(actualWatches.Any(o => o.Address == k2));
+				Assert.True(w2 != null);
 
 				await tester.Client.DeleteWatches(new string[] { w1.Name });
 
@@ -57,6 +58,9 @@ namespace NBitcoin.Watcher.Tests
 
 				Assert.False(actualWatches.Any(o => o.Address == k1));
 				Assert.True(actualWatches.Any(o => o.Address == k2));
+
+				Assert.Null(await tester.Client.GetWatch(w1.Name));
+				Assert.NotNull(await tester.Client.GetWatch(w2.Name));
 			}
 		}
 
