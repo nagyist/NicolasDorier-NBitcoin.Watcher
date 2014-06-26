@@ -1,4 +1,5 @@
-﻿using NBitcoin.Watcher.Client;
+﻿using NBitcoin.Protocol;
+using NBitcoin.Watcher.Client;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,30 @@ namespace NBitcoin.Watcher.Tests
 	[TestFixture]
 	public class ClientTests
 	{
+		[Test]
+		public void WatchCanSynchronizePartialChainAndIndex()
+		{
+			using(var tester = CreateTester())
+			{
+				tester.CachedChain.Copy();
+				tester.CachedIndex.Copy();
+				tester.Watcher.Load();
+				tester.Watcher.UpdateChain();
+				tester.Watcher.ReIndex();
+			}
+		}
+
+		[Test]
+		public void WatchCanSynchronize()
+		{
+			using(var tester = CreateTester())
+			{
+				tester.Watcher.Load();
+				tester.Watcher.UpdateChain();
+				tester.Watcher.ReIndex();
+			}
+		}
+
 		[Test]
 		public async Task CanPing()
 		{

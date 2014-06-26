@@ -12,6 +12,9 @@ using Newtonsoft.Json;
 using NBitcoin.Watcher.Contracts;
 using System.Web.Http.Dispatcher;
 using System.IO;
+using NBitcoin.RPC;
+using NBitcoin.Protocol;
+using System.Diagnostics;
 
 namespace NBitcoin.Watcher
 {
@@ -21,6 +24,15 @@ namespace NBitcoin.Watcher
 		{
 			Parser.Default.ParseArguments(new string[0], this);
 		}
+		[ParserState]
+		public IParserState LastParserState
+		{
+			get;
+			set;
+		}
+
+
+
 		[Option('p', "port", DefaultValue = 80,
 				   HelpText = "Listening port")]
 		public int Port
@@ -37,27 +49,81 @@ namespace NBitcoin.Watcher
 			set;
 		}
 
-		[Option('w',"watches", 
-					DefaultValue="",
-					HelpText="Location of Watches (launch directory by default)")]
+		[Option('w', "watches",
+					DefaultValue = "",
+					HelpText = "Location of Watches (launch directory by default)")]
 		public string WatchDirectory
 		{
 			get;
 			set;
 		}
 
+		[Option("autoconfig",
+					DefaultValue = false,
+					HelpText = "If present, blkdir,rpcuser,rpcpassword,rpcservice will be deduced from locally running bitcoinq processes")]
+		public bool AutoConfig
+		{
+			get;
+			set;
+		}
+
+		[Option("rpcservice",
+					DefaultValue = "http://localhost:8332/",
+					HelpText = "Url to RPC Service (mainnet port 8332, testnet port 18332)")]
+		public string RPCService
+		{
+			get;
+			set;
+		}
+
+		[Option("testnet",
+					DefaultValue = false)]
+		public bool TestNet
+		{
+			get;
+			set;
+		}
+
+
+
+		[Option("blkdir",
+						HelpText = "blk***.dat folder of bitcoinq")]
+		public string BlockDirectory
+		{
+			get;
+			set;
+		}
+
+		[Option("rpcuser",
+					HelpText = "Username to access RPC Service")]
+		public string RPCUser
+		{
+			get;
+			set;
+		}
+		[Option("rpcpassword",
+					HelpText = "Password to access RPC Service")]
+		public string RPCPassword
+		{
+			get;
+			set;
+		}
+
+
 		string _Usage;
 		[HelpOption('?', "help", HelpText = "Display this help screen.")]
 		public string GetUsage()
 		{
 			if(_Usage == null)
-				_Usage = HelpText.AutoBuild(this,(HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
+				_Usage = HelpText.AutoBuild(this, (HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
 			return _Usage;
 			//
 		}
 
+
 		public Uri CreateBaseAddress()
 		{
+			EnsureAutoConfigured();
 			UriBuilder builder = new UriBuilder("http://localhost/");
 			builder.Port = Port;
 			builder.Path = Path;
@@ -66,6 +132,7 @@ namespace NBitcoin.Watcher
 
 		public async Task<HttpSelfHostServer> OpenSelfHost()
 		{
+			EnsureAutoConfigured();
 			var address = CreateBaseAddress();
 			WatcherTrace.Opening(address);
 			var conf = new HttpSelfHostConfiguration(address);
@@ -73,17 +140,47 @@ namespace NBitcoin.Watcher
 			conf.Formatters.JsonFormatter.SerializerSettings = Serialization.CreateSettings();
 			conf.MapHttpAttributeRoutes();
 			conf.Services.Replace(typeof(IHttpControllerActivator), this);
-			
+
 			HttpSelfHostServer server = new HttpSelfHostServer(conf);
 			await server.OpenAsync();
 			WatcherTrace.Started();
 			return server;
 		}
 
+		bool _Configured;
+		public bool EnsureAutoConfigured()
+		{
+			if(!_Configured && AutoConfig)
+			{
+				var process = 
+					Process.GetProcesses()
+					   .Where(n => n.ProcessName == "bitcoin-qt" || n.ProcessName == "bitcoinq")
+					   .Select(p=> new BitcoinQProcess(p))
+					   .Where(p=>p.Testnet == this.TestNet && p.Server)
+					   .FirstOrDefault();
+				if(process == null)
+				{
+					WatcherTrace.AutoConfigNotDetected();
+					return false;
+				}
+				else
+				{
+					WatcherTrace.AutoConfigDetected(process.ToString());
+					RPCUser = process.Parameters["rpcuser"];
+					RPCPassword = process.Parameters["rpcpassword"];
+					BlockDirectory = process.Parameters["blkdir"];
+					RPCService = "http://localhost:" + process.Parameters["rpcport"] + "/";
+				}
+				_Configured = true;
+			}
+			return _Configured || !AutoConfig;
+		}
+
 		#region IHttpControllerActivator Members
 
 		public System.Web.Http.Controllers.IHttpController Create(System.Net.Http.HttpRequestMessage request, System.Web.Http.Controllers.HttpControllerDescriptor controllerDescriptor, Type controllerType)
 		{
+			EnsureAutoConfigured();
 			if(controllerType == typeof(WatchController))
 				return CreateController();
 			return null;
@@ -91,12 +188,26 @@ namespace NBitcoin.Watcher
 
 		public WatchController CreateController()
 		{
+			EnsureAutoConfigured();
 			if(WatchDirectory == "")
 				WatchDirectory = Directory.GetCurrentDirectory();
 			return new WatchController(WatchDirectory);
 		}
 
 		#endregion
+
+		public Watcher CreateWatcher(NodeServer nodeClient = null)
+		{
+
+			RPCClient client = new RPCClient(new System.Net.NetworkCredential(RPCUser, RPCPassword), new Uri(RPCService, UriKind.Absolute), TestNet ? Network.TestNet : Network.Main);
+			if(WatchDirectory == "")
+				WatchDirectory = Directory.GetCurrentDirectory();
+
+			if(nodeClient == null)
+				nodeClient = new NodeServer(client.Network);
+			return new Watcher(client, nodeClient,
+								new BlockStore(BlockDirectory, nodeClient.Network), WatchDirectory);
+		}
 	}
 	class Program
 	{
@@ -105,6 +216,11 @@ namespace NBitcoin.Watcher
 			var options = new WatcherOptions();
 			if(Parser.Default.ParseArguments(args, options))
 			{
+				if(!options.EnsureAutoConfigured())
+				{
+					Environment.ExitCode = 1;
+					return;
+				}
 				using(var server = options.OpenSelfHost().Result)
 				{
 					Console.ReadLine();
