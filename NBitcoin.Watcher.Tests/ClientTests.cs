@@ -3,6 +3,8 @@ using NBitcoin.Watcher.Client;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
@@ -17,15 +19,46 @@ namespace NBitcoin.Watcher.Tests
 	public class ClientTests
 	{
 		[Test]
-		public void WatchCanSynchronizePartialChainAndIndex()
+		public void CanUpdateWatchPubKeyHashWatch()
 		{
-			using(var tester = CreateTester())
+			CanUpdateWatch(new PubKeyHashWatch("mwdJkHRNJi1fEwHBx6ikWFFuo2rLBdri2h")
+			{
+				Start = DateTimeOffset.ParseExact("2014-05-19 23:04:53",
+												  "yyyy-MM-dd HH:mm:ss",
+												  CultureInfo.InvariantCulture,
+												  DateTimeStyles.AssumeUniversal)
+			});
+		}
+
+		[Test]
+		public void CanUpdateWatchStealthWatch()
+		{
+			CanUpdateWatch(new StealthAddressWatch()
+			{
+				Start = DateTimeOffset.ParseExact("2014-05-26 00:04:53",
+												  "yyyy-MM-dd HH:mm:ss",
+												  CultureInfo.InvariantCulture,
+												  DateTimeStyles.AssumeUniversal),
+				Address = "waPYjXyrTrvXjZHmMGdqs9YTegpRDpx97H5G3xqLehkgyrrZKsxGCmnwKexpZjXTCskUWwYywdUvrZK7L2vejeVZSYHVns61gm8VfU",
+				ScanKey = "cc411aab02edcd3bccf484a9ba5280d4a774e6f81eac8ebec9cb1c2e8f73020a"
+			});
+		}
+
+
+		private void CanUpdateWatch(Watch watch, [CallerMemberName]string folder = null)
+		{
+			using(var tester = CreateTester(folder))
 			{
 				tester.CachedChain.Copy();
 				tester.CachedIndex.Copy();
 				tester.Watcher.Load();
 				tester.Watcher.UpdateChain();
 				tester.Watcher.ReIndex();
+				tester.Client.AddWatches(new[] 
+				{ 
+					watch
+				}).Wait();
+				tester.Watcher.UpdateWatches();
 			}
 		}
 

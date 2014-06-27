@@ -1,6 +1,8 @@
-﻿using NBitcoin.Watcher.Contracts;
+﻿using NBitcoin.Scanning;
+using NBitcoin.Watcher.Contracts;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -10,12 +12,12 @@ namespace NBitcoin.Watcher
 {
 	public class WatchDirectory
 	{
-		public static IEnumerable<WatchDirectory> ListWatchDirectories(string watchesDirectory)
+		public static IEnumerable<WatchDirectory> ListWatchDirectories(string watchesDirectory, bool includedMarkedDeleted = false)
 		{
 			foreach(var directory in System.IO.Directory.EnumerateDirectories(watchesDirectory))
 			{
 				var dir = GetWatchDirectory(directory);
-				if(dir != null)
+				if(dir != null && (includedMarkedDeleted || !dir.MarkedDeleted))
 					yield return dir;
 			}
 		}
@@ -77,6 +79,8 @@ namespace NBitcoin.Watcher
 			return new WatchDirectory(fileName);
 		}
 
+		private ScanState _ScanState;
+
 		private static string SanitizeDirectoryName(string directory)
 		{
 			var invalidChars = Path.GetInvalidFileNameChars().Concat(new char[] { '.', '/', '\\' }).ToArray();
@@ -90,6 +94,81 @@ namespace NBitcoin.Watcher
 		public void Delete()
 		{
 			System.IO.Directory.Delete(Directory, true);
+		}
+
+		public void Process(Chain mainChain, IndexedBlockStore index)
+		{
+			if(MarkedDeleted)
+			{
+				if(_ScanState != null)
+				{
+					_ScanState.Dispose();
+				}
+				Delete();
+				return;
+			}
+
+			if(_ScanState == null)
+			{
+				var scanner = Configuration.CreateScanner();
+				if(scanner == null)
+					return;
+				var chainFile = Path.Combine(Directory, "chain.dat");
+				var accountFile = Path.Combine(Directory, "account.dat");
+				var startHeightFile = Path.Combine(Directory, "startheight");
+
+				int startHeight = 0;
+				if(!File.Exists(startHeightFile))
+				{
+					var start =
+						mainChain.ToEnumerable(true)
+							 .FirstOrDefault(b => b.Header.BlockTime <= Configuration.Start);
+					if(start == null)
+						start = mainChain.Genesis;
+					startHeight = start.Height;
+					System.IO.File.WriteAllText(startHeightFile, start.Height.ToString());
+				}
+				else
+				{
+					startHeight = int.Parse(File.ReadAllText(startHeightFile));
+				}
+
+				_ScanState = new ScanState(scanner,
+			new Chain(new StreamObjectStream<ChainChange>(File.Open(chainFile, FileMode.OpenOrCreate))),
+			new Account(new StreamObjectStream<AccountEntry>(File.Open(accountFile, FileMode.OpenOrCreate))), startHeight);
+			}
+
+			_ScanState.Process(mainChain, index);
+		}
+
+		public void MarkDelete()
+		{
+			MarkedDeleted = true;
+		}
+
+		void WriteDeferred(string content)
+		{
+			var deferred = Path.Combine(Directory, "deferred");
+			File.WriteAllText(deferred, content);
+		}
+		string ReadDeferred()
+		{
+			var deferred = Path.Combine(Directory, "deferred");
+			if(!File.Exists(deferred))
+				return null;
+			return File.ReadAllText(deferred);
+		}
+
+		public bool MarkedDeleted
+		{
+			get
+			{
+				return ReadDeferred() == "delete";
+			}
+			private set
+			{
+				WriteDeferred("delete");
+			}
 		}
 	}
 }

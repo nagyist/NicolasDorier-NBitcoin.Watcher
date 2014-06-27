@@ -58,7 +58,7 @@ namespace NBitcoin.Watcher
 			foreach(var n in names)
 			{
 				var watchDir = WatchDirectory.GetWatchDirectory(_Directory, n);
-				if(watchDir != null)
+				if(watchDir != null && !watchDir.MarkedDeleted)
 					result.Add(watchDir.Configuration);
 			}
 			return result.ToArray();
@@ -72,7 +72,7 @@ namespace NBitcoin.Watcher
 			{
 				var watch = WatchDirectory.GetWatchDirectory(_Directory, name);
 				if(watch != null)
-					watch.Delete();
+					watch.MarkDelete();
 			}
 		}
 	}

@@ -55,8 +55,8 @@ namespace NBitcoin.Watcher
 		}
 		BlockStore _Store;
 
-		public Watcher(RPC.RPCClient client, 
-						NodeServer nodeServer, 
+		public Watcher(RPC.RPCClient client,
+						NodeServer nodeServer,
 						BlockStore blockStore,
 						string directory)
 		{
@@ -113,6 +113,21 @@ namespace NBitcoin.Watcher
 				Chain.Changes.Dispose();
 			if(NodeServer != null)
 				NodeServer.Dispose();
+		}
+
+		Dictionary<string, WatchDirectory> _CurrentDirectories = new Dictionary<string,WatchDirectory>();
+		public void UpdateWatches()
+		{
+			foreach(var watch in WatchDirectory.ListWatchDirectories(Directory, true))
+			{
+				var localWatch = watch;
+				if(!_CurrentDirectories.TryGetValue(watch.Configuration.Name, out localWatch))
+				{
+					localWatch = watch;
+					_CurrentDirectories.Add(watch.Configuration.Name, localWatch);
+				}
+				localWatch.Process(Chain, IndexedBlockStore);
+			}
 		}
 	}
 }

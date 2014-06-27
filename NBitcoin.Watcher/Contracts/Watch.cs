@@ -12,7 +12,7 @@ namespace NBitcoin.Watcher.Client
 namespace NBitcoin.Watcher.Contracts
 #endif
 {
-	public class Watch
+	public partial class Watch
 	{
 		public static Watch Parse(string str)
 		{
@@ -44,6 +44,7 @@ namespace NBitcoin.Watcher.Contracts
 			get;
 			set;
 		}
+
 		public override string ToString()
 		{
 			StringWriter writer = new StringWriter();
@@ -59,7 +60,7 @@ namespace NBitcoin.Watcher.Contracts
 	}
 
 	[FriendlyName("PubKeyHash")]
-	public class PubKeyHashWatch : Watch
+	public partial class PubKeyHashWatch : Watch
 	{
 		public PubKeyHashWatch()
 		{
@@ -70,6 +71,21 @@ namespace NBitcoin.Watcher.Contracts
 			Address = address;
 		}
 		public string Address
+		{
+			get;
+			set;
+		}
+	}
+
+	[FriendlyName("StealthAddress")]
+	public partial class StealthAddressWatch : Watch
+	{
+		public string Address
+		{
+			get;
+			set;
+		}
+		public string ScanKey
 		{
 			get;
 			set;
