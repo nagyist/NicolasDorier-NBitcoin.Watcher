@@ -12,12 +12,14 @@ namespace NBitcoin.Watcher
 {
 	public class WatchController : ApiController
 	{
+		Watcher _Watcher;
 		string _Directory;
-		public WatchController(string directory)
+		public WatchController(Watcher watcher)
 		{
-			if(!Directory.Exists(directory))
-				Directory.CreateDirectory(directory);
-			_Directory = directory;
+			_Watcher = watcher;
+			_Directory = _Watcher.Directory;
+			if(!Directory.Exists(_Directory))
+				Directory.CreateDirectory(_Directory);
 		}
 		[Route("ping")]
 		[HttpPost]
@@ -38,7 +40,7 @@ namespace NBitcoin.Watcher
 
 		private void AddWatch(Watch watch)
 		{
-			WatchDirectory.GetOrCreateWatchDirectory(_Directory, watch);
+			_Watcher.AddWatch(watch).Wait();
 		}
 
 
@@ -58,7 +60,7 @@ namespace NBitcoin.Watcher
 			foreach(var n in names)
 			{
 				var watchDir = WatchDirectory.GetWatchDirectory(_Directory, n);
-				if(watchDir != null && !watchDir.MarkedDeleted)
+				if(watchDir != null)
 					result.Add(watchDir.Configuration);
 			}
 			return result.ToArray();
@@ -68,12 +70,7 @@ namespace NBitcoin.Watcher
 		[HttpPost]
 		public void DeleteWatches(string[] names)
 		{
-			foreach(var name in names)
-			{
-				var watch = WatchDirectory.GetWatchDirectory(_Directory, name);
-				if(watch != null)
-					watch.MarkDelete();
-			}
+			Task.WhenAll(names.Select(n => _Watcher.DeleteInstance(n))).Wait();
 		}
 	}
 }

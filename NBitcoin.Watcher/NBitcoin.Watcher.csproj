@@ -92,17 +92,19 @@
     <Compile Include="WatchDirectory.cs" />
     <Compile Include="Watcher.cs" />
     <Compile Include="WatcherTrace.cs" />
+    <Compile Include="WatchInstance.cs" />
+    <Compile Include="WatchInstancePool.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
     <Content Include="..\packages\System.Data.SQLite.Core.1.0.93.0\content\net45\x64\SQLite.Interop.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>x64/toto</Link>
+      <Link>x64/SQLite.Interop.dll</Link>
     </Content>
     <Content Include="..\packages\System.Data.SQLite.Core.1.0.93.0\content\net45\x86\SQLite.Interop.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>x86/toto</Link>
+      <Link>x86/SQLite.Interop.dll</Link>
     </Content>
   </ItemGroup>
   <ItemGroup>

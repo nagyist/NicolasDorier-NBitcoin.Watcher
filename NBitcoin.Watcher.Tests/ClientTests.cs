@@ -19,6 +19,7 @@ namespace NBitcoin.Watcher.Tests
 	public class ClientTests
 	{
 		[Test]
+		[Category("UnitTests")]
 		public void CanUpdateWatchPubKeyHashWatch()
 		{
 			CanUpdateWatch(new PubKeyHashWatch("mwdJkHRNJi1fEwHBx6ikWFFuo2rLBdri2h")
@@ -31,6 +32,7 @@ namespace NBitcoin.Watcher.Tests
 		}
 
 		[Test]
+		[Category("UnitTests")]
 		public void CanUpdateWatchStealthWatch()
 		{
 			CanUpdateWatch(new StealthAddressWatch()
@@ -58,11 +60,13 @@ namespace NBitcoin.Watcher.Tests
 				{ 
 					watch
 				}).Wait();
-				tester.Watcher.UpdateWatches();
+				tester.Watcher.FetchWatches();
+				tester.Watcher.ProcessAll().Wait();
 			}
 		}
 
 		[Test]
+		[Category("Benchmark")]
 		public void WatchCanSynchronize()
 		{
 			using(var tester = CreateTester())
@@ -74,6 +78,7 @@ namespace NBitcoin.Watcher.Tests
 		}
 
 		[Test]
+		[Category("UnitTests")]
 		public async Task CanPing()
 		{
 			using(var tester = CreateTester())
@@ -85,6 +90,7 @@ namespace NBitcoin.Watcher.Tests
 
 
 		[Test]
+		[Category("UnitTests")]
 		public void CanParseAndSerializeWatch()
 		{
 			var watch = new PubKeyHashWatch();
@@ -95,6 +101,7 @@ namespace NBitcoin.Watcher.Tests
 			Assert.AreEqual(watch.ToString(), watch3.ToString());
 		}
 		[Test]
+		[Category("UnitTests")]
 		public async Task CanCRUDWatches()
 		{
 			using(var tester = CreateTester())
@@ -125,6 +132,32 @@ namespace NBitcoin.Watcher.Tests
 		private WatcherTester CreateTester([CallerMemberName]string folder = null)
 		{
 			return new WatcherTester(folder);
+		}
+
+
+		[Test]
+		[Category("Stress")]
+		public void StressWatcher()
+		{
+			List<Task> tasks = new List<Task>();
+			for(int i = 0 ; i < 5 ; i++)
+			{
+				var locali = i;
+				var task = Task.Run(() =>
+				{
+					CanUpdateWatch(new StealthAddressWatch()
+						{
+							Start = DateTimeOffset.ParseExact("2014-05-26 00:04:53",
+															  "yyyy-MM-dd HH:mm:ss",
+															  CultureInfo.InvariantCulture,
+															  DateTimeStyles.AssumeUniversal),
+							Address = "waPYjXyrTrvXjZHmMGdqs9YTegpRDpx97H5G3xqLehkgyrrZKsxGCmnwKexpZjXTCskUWwYywdUvrZK7L2vejeVZSYHVns61gm8VfU",
+							ScanKey = "cc411aab02edcd3bccf484a9ba5280d4a774e6f81eac8ebec9cb1c2e8f73020a"
+						}, "StressWatcher-" + locali);
+				});
+				tasks.Add(task);
+			}
+			Task.WhenAll(tasks.ToArray()).Wait();
 		}
 	}
 }

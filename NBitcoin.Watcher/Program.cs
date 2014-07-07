@@ -23,6 +23,11 @@ namespace NBitcoin.Watcher
 		public WatcherOptions()
 		{
 			Parser.Default.ParseArguments(new string[0], this);
+
+			_Watcher = new Lazy<Watcher>(() =>
+	   {
+		   return CreateWatcher();
+	   }, false);
 		}
 		[ParserState]
 		public IParserState LastParserState
@@ -152,11 +157,9 @@ namespace NBitcoin.Watcher
 		{
 			if(!_Configured && AutoConfig)
 			{
-				var process = 
-					Process.GetProcesses()
-					   .Where(n => n.ProcessName == "bitcoin-qt" || n.ProcessName == "bitcoinq")
-					   .Select(p=> new BitcoinQProcess(p))
-					   .Where(p=>p.Testnet == this.TestNet && p.Server)
+				var process =
+					BitcoinQProcess.List()
+					   .Where(p => p.Testnet == this.TestNet && p.Server)
 					   .FirstOrDefault();
 				if(process == null)
 				{
@@ -166,10 +169,10 @@ namespace NBitcoin.Watcher
 				else
 				{
 					WatcherTrace.AutoConfigDetected(process.ToString());
-					RPCUser = process.Parameters["rpcuser"];
-					RPCPassword = process.Parameters["rpcpassword"];
+					RPCUser = process.RPCUser;
+					RPCPassword = process.RPCPassword;
 					BlockDirectory = process.Parameters["blkdir"];
-					RPCService = "http://localhost:" + process.Parameters["rpcport"] + "/";
+					RPCService = process.RPCService;
 				}
 				_Configured = true;
 			}
@@ -186,12 +189,20 @@ namespace NBitcoin.Watcher
 			return null;
 		}
 
+		Lazy<Watcher> _Watcher;
+		Watcher Watcher
+		{
+			get
+			{
+				return _Watcher.Value;
+			}
+		}
 		public WatchController CreateController()
 		{
 			EnsureAutoConfigured();
 			if(WatchDirectory == "")
 				WatchDirectory = Directory.GetCurrentDirectory();
-			return new WatchController(WatchDirectory);
+			return new WatchController(Watcher);
 		}
 
 		#endregion

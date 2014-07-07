@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NBitcoin.RPC;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -134,6 +135,22 @@ namespace NBitcoin.Watcher
 				Parameters.Add("datadir", datadir);
 		}
 
+		public string RPCPassword
+		{
+			get
+			{
+				return Parameters["rpcpassword"];
+			}
+		}
+
+		public string RPCService
+		{
+			get
+			{
+				return "http://localhost:" + Parameters["rpcport"] + "/";
+			}
+		}
+
 		private string GetConfigField(string field)
 		{
 			var match = Regex.Match(_Configuration, field + "=([^\r]*)");
@@ -204,6 +221,14 @@ namespace NBitcoin.Watcher
 			}
 		}
 
+		public Network Network
+		{
+			get
+			{
+				return Testnet ? Network.TestNet : Network.Main;
+			}
+		}
+
 		public override string ToString()
 		{
 			StringBuilder builder = new StringBuilder();
@@ -220,6 +245,32 @@ namespace NBitcoin.Watcher
 			{
 				return Parameters["server"] == "1";
 			}
+		}
+
+		public string RPCUser
+		{
+			get
+			{
+				return Parameters["rpcuser"];
+			}
+		}
+
+		public RPCClient CreateClient()
+		{
+			if(!Server)
+				throw new InvalidOperationException("This BitcoinQ process is not a server (-server parameter)");
+			RPCClient client = new RPCClient(new System.Net.NetworkCredential(RPCUser, RPCPassword), new Uri(RPCService, UriKind.Absolute), Network);
+
+			return client;
+		}
+
+
+
+		public static IEnumerable<BitcoinQProcess> List()
+		{
+			return Process.GetProcesses()
+					   .Where(n => n.ProcessName == "bitcoin-qt" || n.ProcessName == "bitcoinq")
+					   .Select(p=> new BitcoinQProcess(p));
 		}
 	}
 
